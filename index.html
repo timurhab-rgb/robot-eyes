@@ -72,7 +72,7 @@
     // ВАЖНО: SECRET должен совпадать с SECRET в main.py на ESP32
     const SECRET = "12345678";
 
-    const BROKER = "wss://broker.hivemq.com:8001/mqtt";
+    const BROKER = "wss://broker.emqx.io:8084/mqtt";
     const TOPIC = "robot-eyes/" + SECRET + "/cmd";
 
     const statusEl = document.getElementById("status");

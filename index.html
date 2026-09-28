@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Eyes Remote</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .status {
+      margin-bottom: 24px;
+      color: #7dff7d;
+      font-size: 16px;
+    }
+
+    .buttons {
+      display: grid;
+      gap: 14px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 22px;
+      border: 0;
+      border-radius: 18px;
+      background: #222;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.97);
+      background: #333;
+    }
+
+    .laughter { background: #2a7d2a; }
+    .anger { background: #a32323; }
+    .sadness { background: #2456a8; }
+    .surprise { background: #b58900; }
+  </style>
+</head>
+
+<body>
+
+  <h1>Robot Eyes</h1>
+  <div class="status" id="status">Connecting...</div>
+
+  <div class="buttons">
+    <button class="laughter" onclick="sendEmotion('laughter')">Смех</button>
+    <button class="anger" onclick="sendEmotion('anger')">Злость</button>
+    <button class="sadness" onclick="sendEmotion('sadness')">Грусть</button>
+    <button class="surprise" onclick="sendEmotion('surprise')">Удивление</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+
+  <script>
+    // ВАЖНО: SECRET должен совпадать с SECRET в main.py на ESP32
+    const SECRET = "r3b0t-3y3s-7f2a91c4d8e6b0a35c7d9e1f2a4b6c8d";
+
+    const BROKER = "wss://broker.hivemq.com:8000/mqtt";
+    const TOPIC = "robot-eyes/" + SECRET + "/cmd";
+
+    const statusEl = document.getElementById("status");
+
+    const client = mqtt.connect(BROKER, {
+      clientId: "web-robot-eyes-" + Math.random().toString(16).slice(2),
+      clean: true,
+      connectTimeout: 5000,
+      reconnectPeriod: 2000
+    });
+
+    client.on("connect", () => {
+      statusEl.textContent = "Connected";
+      statusEl.style.color = "#7dff7d";
+    });
+
+    client.on("offline", () => {
+      statusEl.textContent = "Offline";
+      statusEl.style.color = "#ff7d7d";
+    });
+
+    client.on("error", (err) => {
+      console.error(err);
+      statusEl.textContent = "Error";
+      statusEl.style.color = "#ff7d7d";
+    });
+
+    function sendEmotion(emotion) {
+      if (!client.connected) {
+        statusEl.textContent = "Not connected";
+        statusEl.style.color = "#ff7d7d";
+        return;
+      }
+
+      client.publish(TOPIC, emotion, { qos: 0 }, (err) => {
+        if (err) {
+          console.error(err);
+          statusEl.textContent = "Send error";
+          statusEl.style.color = "#ff7d7d";
+        } else {
+          statusEl.textContent = "Sent: " + emotion;
+          statusEl.style.color = "#7dff7d";
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

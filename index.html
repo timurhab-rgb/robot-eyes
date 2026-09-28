@@ -20,9 +20,17 @@
     }
 
     .status {
-      margin-bottom: 24px;
+      margin-bottom: 10px;
       color: #7dff7d;
       font-size: 16px;
+      min-height: 24px;
+    }
+
+    .substatus {
+      margin-bottom: 24px;
+      color: #aaa;
+      font-size: 13px;
+      min-height: 18px;
     }
 
     .buttons {
@@ -51,13 +59,29 @@
     .anger { background: #a32323; }
     .sadness { background: #2456a8; }
     .surprise { background: #b58900; }
+
+    .reconnect {
+      margin-top: 18px;
+      padding: 12px 18px;
+      font-size: 16px;
+      border-radius: 12px;
+      background: #333;
+    }
+
+    .hint {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #888;
+    }
   </style>
 </head>
 
 <body>
 
   <h1>Robot Eyes</h1>
+
   <div class="status" id="status">Connecting...</div>
+  <div class="substatus" id="substatus">Broker: EMQX</div>
 
   <div class="buttons">
     <button class="laughter" onclick="sendEmotion('laughter')">Смех</button>
@@ -66,58 +90,176 @@
     <button class="surprise" onclick="sendEmotion('surprise')">Удивление</button>
   </div>
 
+  <button class="reconnect" onclick="manualReconnect()">Переподключить</button>
+
+  <div class="hint">
+    ESP32 и сайт должны использовать один и тот же MQTT-брокер и один SECRET.
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 
   <script>
-    // ВАЖНО: SECRET должен совпадать с SECRET в main.py на ESP32
-    const SECRET = "12345678";
+    // ВАЖНО: SECRET должен совпадать с SECRET в main.py на ESP32.
+    const SECRET = "r3b0t-3y3s-7f2a91c4d8e6b0a35c7d9e1f2a4b6c8d";
 
-    const BROKER = "wss://broker.emqx.io:8084/mqtt";
-    const TOPIC = "robot-eyes/" + SECRET + "/cmd";
+    // Должно совпадать с ESP32.
+    // ESP32: broker.emqx.io:1883
+    // Сайт:  wss://broker.emqx.io:8084/mqtt
+    const BROKER_NAME = "EMQX";
+    const BROKER_URL = "wss://broker.emqx.io:8084/mqtt";
+
+    const CMD_TOPIC = "robot-eyes/" + SECRET + "/cmd";
+    const STATUS_TOPIC = "robot-eyes/" + SECRET + "/status";
 
     const statusEl = document.getElementById("status");
+    const substatusEl = document.getElementById("substatus");
 
-    const client = mqtt.connect(BROKER, {
-      clientId: "web-robot-eyes-" + Math.random().toString(16).slice(2),
-      clean: true,
-      connectTimeout: 5000,
-      reconnectPeriod: 2000
-    });
+    let client = null;
+    let brokerConnected = false;
+    let lastEspSeen = 0;
+    let espOnline = false;
 
-    client.on("connect", () => {
-      statusEl.textContent = "Connected";
-      statusEl.style.color = "#7dff7d";
-    });
+    function setStatus(text, color) {
+      statusEl.textContent = text;
+      statusEl.style.color = color;
+    }
 
-    client.on("offline", () => {
-      statusEl.textContent = "Offline";
-      statusEl.style.color = "#ff7d7d";
-    });
+    function setSubstatus(text) {
+      substatusEl.textContent = text;
+    }
 
-    client.on("error", (err) => {
-      console.error(err);
-      statusEl.textContent = "Error";
-      statusEl.style.color = "#ff7d7d";
-    });
-
-    function sendEmotion(emotion) {
-      if (!client.connected) {
-        statusEl.textContent = "Not connected";
-        statusEl.style.color = "#ff7d7d";
+    function updateStatus() {
+      if (!brokerConnected) {
+        setStatus("Connecting...", "#ffcf5d");
+        setSubstatus("Broker: " + BROKER_NAME);
         return;
       }
 
-      client.publish(TOPIC, emotion, { qos: 0 }, (err) => {
-        if (err) {
-          console.error(err);
-          statusEl.textContent = "Send error";
-          statusEl.style.color = "#ff7d7d";
-        } else {
-          statusEl.textContent = "Sent: " + emotion;
-          statusEl.style.color = "#7dff7d";
+      const now = Date.now();
+      const espAge = now - lastEspSeen;
+
+      if (lastEspSeen === 0) {
+        setStatus("Broker connected, waiting ESP...", "#ffcf5d");
+        setSubstatus("ESP heartbeat not received yet");
+        espOnline = false;
+        return;
+      }
+
+      if (espAge > 20000) {
+        setStatus("ESP offline", "#ff7d7d");
+        setSubstatus("Last ESP heartbeat: " + Math.round(espAge / 1000) + " sec ago");
+        espOnline = false;
+      } else {
+        setStatus("Connected, ESP online", "#7dff7d");
+        setSubstatus("Last ESP heartbeat: " + Math.round(espAge / 1000) + " sec ago");
+        espOnline = true;
+      }
+    }
+
+    function connectMQTT() {
+      if (client) {
+        try {
+          client.end(true);
+        } catch (e) {
+          console.warn("client.end error", e);
+        }
+      }
+
+      brokerConnected = false;
+      updateStatus();
+
+      client = mqtt.connect(BROKER_URL, {
+        clientId: "web-robot-eyes-" + Math.random().toString(16).slice(2),
+        clean: true,
+        keepalive: 30,
+        reconnectPeriod: 2000,
+        connectTimeout: 5000,
+        protocolVersion: 4
+      });
+
+      client.on("connect", () => {
+        console.log("MQTT connected to " + BROKER_NAME);
+        brokerConnected = true;
+
+        client.subscribe(STATUS_TOPIC, { qos: 0 }, (err) => {
+          if (err) {
+            console.error("Subscribe status error:", err);
+          }
+        });
+
+        updateStatus();
+      });
+
+      client.on("reconnect", () => {
+        console.log("MQTT reconnecting...");
+        brokerConnected = false;
+        setStatus("Reconnecting...", "#ffcf5d");
+        updateStatus();
+      });
+
+      client.on("close", () => {
+        console.log("MQTT closed");
+        brokerConnected = false;
+        updateStatus();
+      });
+
+      client.on("offline", () => {
+        console.log("MQTT offline");
+        brokerConnected = false;
+        updateStatus();
+      });
+
+      client.on("error", (err) => {
+        console.error("MQTT error:", err);
+        setStatus("Broker error", "#ff7d7d");
+        setSubstatus(String(err.message || err));
+      });
+
+      client.on("message", (topic, message) => {
+        if (topic === STATUS_TOPIC) {
+          lastEspSeen = Date.now();
+          updateStatus();
         }
       });
     }
+
+    function manualReconnect() {
+      lastEspSeen = 0;
+      espOnline = false;
+      setStatus("Manual reconnect...", "#ffcf5d");
+      connectMQTT();
+    }
+
+    function sendEmotion(emotion) {
+      if (!client || !client.connected) {
+        setStatus("Not connected", "#ff7d7d");
+        connectMQTT();
+        return;
+      }
+
+      client.publish(CMD_TOPIC, emotion, { qos: 0 }, (err) => {
+        if (err) {
+          console.error("Publish error:", err);
+          setStatus("Send error", "#ff7d7d");
+          setSubstatus(String(err.message || err));
+        } else {
+          setStatus("Sent: " + emotion, "#7dff7d");
+
+          if (!espOnline) {
+            setSubstatus("Message sent, but ESP looks offline");
+          } else {
+            setSubstatus("Message sent to " + BROKER_NAME);
+          }
+        }
+      });
+    }
+
+    window.sendEmotion = sendEmotion;
+    window.manualReconnect = manualReconnect;
+
+    setInterval(updateStatus, 1000);
+
+    connectMQTT();
   </script>
 
 </body>

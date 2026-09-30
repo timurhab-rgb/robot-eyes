@@ -27,10 +27,38 @@
     }
 
     .substatus {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       color: #aaa;
       font-size: 13px;
       min-height: 18px;
+    }
+
+    .screen-wrap {
+      margin: 0 auto 16px auto;
+      max-width: 384px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 128 / 64;
+      background: #000;
+      border: 2px solid #333;
+      border-radius: 10px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 384px;
+      margin: 0 auto 18px auto;
     }
 
     .buttons {
@@ -41,10 +69,10 @@
     }
 
     button {
-      padding: 20px;
-      font-size: 22px;
+      padding: 16px;
+      font-size: 18px;
       border: 0;
-      border-radius: 18px;
+      border-radius: 14px;
       background: #222;
       color: #fff;
       cursor: pointer;
@@ -53,6 +81,20 @@
     button:active {
       transform: scale(0.97);
       background: #333;
+    }
+
+    .small {
+      padding: 12px 16px;
+      font-size: 16px;
+      border-radius: 12px;
+    }
+
+    .send {
+      background: #1f6feb;
+    }
+
+    .clear {
+      background: #444;
     }
 
     .laughter { background: #2a7d2a; }
@@ -73,6 +115,12 @@
       font-size: 13px;
       color: #888;
     }
+
+    .section-title {
+      margin: 18px 0 10px 0;
+      color: #ddd;
+      font-size: 16px;
+    }
   </style>
 </head>
 
@@ -82,6 +130,19 @@
 
   <div class="status" id="status">Connecting...</div>
   <div class="substatus" id="substatus">Broker: EMQX</div>
+
+  <div class="section-title">Экран 128x64</div>
+
+  <div class="screen-wrap">
+    <canvas id="screen" width="128" height="64"></canvas>
+  </div>
+
+  <div class="row">
+    <button class="small clear" onclick="clearCanvas()">Очистить</button>
+    <button class="small send" onclick="sendDrawing()">Отправить рисунок</button>
+  </div>
+
+  <div class="section-title">Эмоции</div>
 
   <div class="buttons">
     <button class="laughter" onclick="sendEmotion('laughter')">Смех</button>
@@ -93,7 +154,7 @@
   <button class="reconnect" onclick="manualReconnect()">Переподключить</button>
 
   <div class="hint">
-    ESP32 и сайт должны использовать один и тот же MQTT-брокер и один SECRET.
+    Рисуй белым по чёрному. После отправки рисунок будет показан на OLED 60 секунд.
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
@@ -109,15 +170,22 @@
     const BROKER_URL = "wss://broker.emqx.io:8084/mqtt";
 
     const CMD_TOPIC = "robot-eyes/" + SECRET + "/cmd";
+    const IMAGE_TOPIC = "robot-eyes/" + SECRET + "/image";
     const STATUS_TOPIC = "robot-eyes/" + SECRET + "/status";
 
     const statusEl = document.getElementById("status");
     const substatusEl = document.getElementById("substatus");
+    const canvas = document.getElementById("screen");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     let client = null;
     let brokerConnected = false;
     let lastEspSeen = 0;
     let espOnline = false;
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
 
     function setStatus(text, color) {
       statusEl.textContent = text;
@@ -230,6 +298,135 @@
       connectMQTT();
     }
 
+    function clearCanvas() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.imageSmoothingEnabled = false;
+
+      setSubstatus("Canvas cleared");
+    }
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      drawing = true;
+
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      const p = getCanvasPos(e);
+      lastX = p.x;
+      lastY = p.y;
+
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }, { passive: false });
+
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drawing) return;
+      e.preventDefault();
+
+      const p = getCanvasPos(e);
+
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+
+      lastX = p.x;
+      lastY = p.y;
+    }, { passive: false });
+
+    canvas.addEventListener("pointerup", (e) => {
+      drawing = false;
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      drawing = false;
+    });
+
+    canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
+
+    function canvasToBase64() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+
+      // 128x64 монохромно = 1024 байта
+      const bytes = new Uint8Array(1024);
+
+      for (let y = 0; y < 64; y++) {
+        const page = y >> 3;
+        const bit = 1 << (y & 7);
+        const rowOffset = y * 128;
+        const bufferOffset = page * 128;
+
+        for (let x = 0; x < 128; x++) {
+          const idx = (rowOffset + x) * 4;
+
+          // Белый пиксель => 1 на OLED
+          if (d[idx] > 127 || d[idx + 1] > 127 || d[idx + 2] > 127) {
+            bytes[bufferOffset + x] |= bit;
+          }
+        }
+      }
+
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+
+      return btoa(binary);
+    }
+
+    function sendDrawing() {
+      if (!client || !client.connected) {
+        setStatus("Not connected", "#ff7d7d");
+        connectMQTT();
+        return;
+      }
+
+      try {
+        const payload = canvasToBase64();
+
+        client.publish(IMAGE_TOPIC, payload, { qos: 0 }, (err) => {
+          if (err) {
+            console.error("Publish image error:", err);
+            setStatus("Send error", "#ff7d7d");
+            setSubstatus(String(err.message || err));
+          } else {
+            setStatus("Drawing sent", "#7dff7d");
+
+            if (!espOnline) {
+              setSubstatus("Drawing sent, but ESP looks offline");
+            } else {
+              setSubstatus("Robot will show drawing for 60 sec");
+            }
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        setStatus("Canvas error", "#ff7d7d");
+        setSubstatus(String(e.message || e));
+      }
+    }
+
     function sendEmotion(emotion) {
       if (!client || !client.connected) {
         setStatus("Not connected", "#ff7d7d");
@@ -255,10 +452,13 @@
     }
 
     window.sendEmotion = sendEmotion;
+    window.sendDrawing = sendDrawing;
+    window.clearCanvas = clearCanvas;
     window.manualReconnect = manualReconnect;
 
     setInterval(updateStatus, 1000);
 
+    clearCanvas();
     connectMQTT();
   </script>
 

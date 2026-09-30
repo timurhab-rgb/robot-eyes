@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robot Eyes ❤</title>
+  <title>Ti-Di ❤</title>
 
   <style>
     :root {
@@ -285,7 +285,7 @@
 
 <body>
   <div class="wrap">
-    <h1>Robot Eyes ❤</h1>
+    <h1>Ti_Di ❤</h1>
     <div class="subtitle">маленький робот для наших моментов</div>
 
     <div class="card">
@@ -318,7 +318,7 @@
     <div class="card days-card">
       <div class="metric-title">Мы вместе</div>
       <div class="days-number" id="daysValue">--</div>
-      <div class="days-label">дней с 28 марта 2026</div>
+      <div class="days-label">дней прошло</div>
     </div>
 
     <div class="heart-divider">❤ ❤ ❤</div>
@@ -335,17 +335,14 @@
         <button class="small send" onclick="sendDrawing()">Отправить рисунок</button>
       </div>
 
-      <div class="hint">
-        Перед показом рисунка робот на 2 секунды удивится,
-        затем будет показывать рисунок 60 секунд.
-      </div>
+      
     </div>
 
     <div class="card">
-      <div class="section-title">Эмоции</div>
+      <div class="section-title">Действия</div>
 
       <div class="buttons">
-        <button class="emotion-btn" onclick="sendEmotion('hug')">Обнимашки</button>
+        <button class="emotion-btn" onclick="sendEmotion('hug')">Чмоки-чмоки</button>
         <button class="emotion-btn" onclick="sendEmotion('tickle')">Щекотка</button>
       </div>
 
@@ -356,9 +353,7 @@
 
     <button class="reconnect" onclick="manualReconnect()">Переподключить</button>
 
-    <div class="hint">
-      ESP32 и сайт должны использовать один и тот же MQTT-брокер и один SECRET.
-    </div>
+    
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>

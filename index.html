@@ -1,1106 +1,794 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Robot Crimson Control</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Eyes ❤</title>
+
   <style>
     :root {
-      --bg: #050304;
-      --bg2: #120407;
-      --panel: #150509;
-      --panel2: #1e070d;
-      --line: #4a0b16;
-      --line2: #7a1020;
-      --text: #fff2f4;
-      --muted: #d6a7b0;
-      --crimson: #8b0000;
-      --crimson2: #b00020;
-      --accent: #ff1f3d;
-      --accent2: #ff5f78;
-      --ok: #57ff9a;
-      --warn: #ffd166;
-      --bad: #ff6b81;
-      --shadow: 0 10px 30px rgba(0,0,0,.55);
-      --glow: 0 0 18px rgba(255,31,61,.22);
+      --bg0: #050000;
+      --bg1: #120000;
+      --panel: rgba(28, 0, 0, 0.82);
+      --panel2: rgba(14, 0, 0, 0.86);
+      --border: #8b0000;
+      --scarlet: #dc1430;
+      --scarlet2: #ff3b3b;
+      --scarlet-dark: #7a0010;
+      --rose: #ffb3c0;
+      --text: #fff0f2;
+      --muted: #d89aa3;
+      --danger: #ff5a5a;
+      --warn: #ffb35a;
+      --ok: #ff8fa3;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    html, body {
-      height: 100%;
-    }
-
     body {
       margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
       color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(139,0,0,.22), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(255,31,61,.12), transparent 30%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      overflow-x: hidden;
+        radial-gradient(circle at top, rgba(220, 20, 48, 0.22), transparent 38%),
+        radial-gradient(circle at bottom right, rgba(139, 0, 0, 0.18), transparent 28%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      padding: 24px 16px 40px;
     }
 
-    .app {
-      max-width: 1180px;
+    .wrap {
+      max-width: 520px;
       margin: 0 auto;
-      padding: 14px;
-      display: grid;
-      gap: 14px;
     }
 
-    .header,
-    .battery-card,
-    .panel,
-    .pad-wrap {
-      background: linear-gradient(180deg, rgba(30,7,13,.96), rgba(12,4,6,.96));
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .header {
-      padding: 12px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .title {
-      font-weight: 800;
-      letter-spacing: .3px;
-      font-size: 20px;
-      color: #fff;
-      text-shadow: 0 0 12px rgba(255,31,61,.25);
+    h1 {
+      text-align: center;
+      margin: 0 0 8px;
+      font-size: 34px;
+      letter-spacing: 1px;
+      color: var(--rose);
+      text-shadow: 0 0 18px rgba(220, 20, 48, 0.45);
     }
 
     .subtitle {
+      text-align: center;
       color: var(--muted);
-      font-size: 12px;
-      margin-top: 2px;
+      font-size: 14px;
+      margin-bottom: 18px;
+      font-style: italic;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(139, 0, 0, 0.65);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow:
+        0 10px 35px rgba(0, 0, 0, 0.45),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(8px);
+      margin-bottom: 16px;
     }
 
     .status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(0,0,0,.22);
-      min-width: 220px;
-      justify-content: center;
-    }
-
-    .dot {
-      width: 11px;
-      height: 11px;
-      border-radius: 50%;
-      background: #5b5b5b;
-      box-shadow: 0 0 0 2px rgba(255,255,255,.04) inset;
-      flex: 0 0 auto;
-    }
-
-    .dot.online {
-      background: var(--accent);
-      box-shadow: 0 0 14px var(--accent);
-    }
-
-    .dot.connecting {
-      background: var(--warn);
-      box-shadow: 0 0 14px rgba(255,209,102,.45);
-    }
-
-    .dot.offline {
-      background: #7a1020;
-      box-shadow: 0 0 10px rgba(122,16,32,.45);
-    }
-
-    .status-text {
-      font-size: 13px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 220px;
-    }
-
-    .battery-card {
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .battery-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .battery-label {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .battery-values {
-      display: flex;
-      gap: 12px;
-      align-items: baseline;
-      flex-wrap: wrap;
-    }
-
-    .battery-volt {
-      font-size: 28px;
-      font-weight: 800;
-      color: #fff;
-      text-shadow: 0 0 14px rgba(255,31,61,.18);
-    }
-
-    .battery-percent {
+      text-align: center;
       font-size: 16px;
-      color: var(--accent2);
-      font-weight: 700;
+      color: var(--ok);
+      min-height: 24px;
+      margin-bottom: 6px;
     }
 
-    .battery-bar {
-      height: 18px;
-      border-radius: 999px;
-      background: #120407;
-      border: 1px solid var(--line);
-      overflow: hidden;
-      position: relative;
-    }
-
-    .battery-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #56000f, var(--crimson2), var(--accent), #ff8fa0);
-      box-shadow: 0 0 18px rgba(255,31,61,.35) inset;
-      transition: width .12s linear;
-    }
-
-    .battery-bar::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0 24%, rgba(255,255,255,.08) 25%, transparent 26%);
-      pointer-events: none;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: minmax(320px, 1fr) 360px;
-      gap: 14px;
-      align-items: start;
-    }
-
-    @media (max-width: 900px) {
-      .controls {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .pad-wrap {
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .pad-title {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .pad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-
-    .btn {
-      position: relative;
-      min-height: 74px;
-      border-radius: 14px;
-      border: 1px solid var(--line2);
-      background: linear-gradient(180deg, #22070d, #130407);
-      color: var(--text);
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: .4px;
-      cursor: pointer;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 18px rgba(0,0,0,.35);
-      transition: transform .04s ease, box-shadow .08s ease, background .08s ease, border-color .08s ease;
-      outline: none;
-    }
-
-    .btn:hover {
-      border-color: var(--accent);
-      background: linear-gradient(180deg, #2b0810, #170509);
-    }
-
-    .btn.pressed,
-    .btn:active {
-      transform: scale(.97);
-      background: linear-gradient(180deg, #4a0914, #22060c);
-      border-color: var(--accent);
-      box-shadow: 0 0 18px rgba(255,31,61,.25), inset 0 0 14px rgba(255,31,61,.12);
-    }
-
-    .btn.up { grid-column: 2; grid-row: 1; }
-    .btn.left { grid-column: 1; grid-row: 2; }
-    .btn.center { grid-column: 2; grid-row: 2; }
-    .btn.right { grid-column: 3; grid-row: 2; }
-    .btn.down { grid-column: 2; grid-row: 3; }
-
-    .btn.stop {
-      background: linear-gradient(180deg, #3f060f, #1a0307);
-      border-color: #a10f24;
-    }
-
-    .btn.estop {
-      min-height: 64px;
-      background: linear-gradient(180deg, #7a0014, #360009);
-      border-color: #ff1f3d;
-      color: #fff;
-      text-shadow: 0 0 10px rgba(255,255,255,.18);
-      box-shadow: 0 0 18px rgba(255,31,61,.18), inset 0 1px 0 rgba(255,255,255,.08);
-    }
-
-    .btn.action {
-      min-height: 58px;
-      font-size: 15px;
-    }
-
-    .side {
-      display: grid;
-      gap: 14px;
-    }
-
-    .panel {
-      padding: 14px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .panel-title {
-      font-size: 14px;
-      color: var(--muted);
-      font-weight: 700;
-      letter-spacing: .2px;
-    }
-
-    label {
-      display: block;
+    .substatus {
+      text-align: center;
       font-size: 12px;
       color: var(--muted);
-      margin-bottom: 4px;
+      min-height: 18px;
+      margin-bottom: 14px;
     }
 
-    input, select {
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .metric {
+      background: var(--panel2);
+      border: 1px solid rgba(139, 0, 0, 0.55);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .metric-title {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.4px;
+    }
+
+    .metric-value {
+      color: var(--rose);
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .bar {
       width: 100%;
-      background: #090304;
-      color: var(--text);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      outline: none;
-      font-size: 14px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(255,31,61,.14);
+    .fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.35s ease, background 0.35s ease;
+      background: linear-gradient(90deg, var(--scarlet-dark), var(--scarlet), var(--scarlet2));
+      box-shadow: 0 0 12px rgba(220, 20, 48, 0.45);
+    }
+
+    .fill.battery {
+      background: linear-gradient(90deg, #4a000b, #8b0000, #dc1430, #ff5a5a);
+    }
+
+    .fill.interaction {
+      background: linear-gradient(90deg, #3b0008, #7a0010, #dc1430, #ff7a8a);
+    }
+
+    .days-card {
+      text-align: center;
+      padding: 16px;
+    }
+
+    .days-number {
+      font-size: 42px;
+      line-height: 1;
+      color: var(--scarlet2);
+      text-shadow: 0 0 18px rgba(220, 20, 48, 0.35);
+      margin: 6px 0 4px;
+    }
+
+    .days-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    .section-title {
+      text-align: center;
+      color: var(--rose);
+      font-size: 16px;
+      margin: 18px 0 10px;
+      letter-spacing: 0.6px;
+    }
+
+    .screen-wrap {
+      margin: 0 auto 12px;
+      max-width: 384px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 128 / 64;
+      background: #000;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      touch-action: none;
+      cursor: crosshair;
+      box-shadow: 0 0 24px rgba(220, 20, 48, 0.22);
     }
 
     .row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 384px;
+      margin: 0 auto 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .small {
+      padding: 12px 16px;
+      font-size: 15px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .send {
+      background: linear-gradient(135deg, #7a0010, #dc1430);
+      box-shadow: 0 6px 18px rgba(220, 20, 48, 0.30);
+    }
+
+    .clear {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .buttons {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 14px;
+      max-width: 384px;
+      margin: 0 auto;
     }
 
-    .row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+    .emotion-btn {
+      padding: 20px 18px;
+      font-size: 22px;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #5a000b, #8b0000, #dc1430, #ff3b3b);
+      box-shadow:
+        0 8px 22px rgba(220, 20, 48, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.07);
     }
 
-    @media (max-width: 420px) {
-      .row, .row-3 {
-        grid-template-columns: 1fr;
-      }
+    .emotion-btn:hover {
+      filter: brightness(1.08);
     }
 
-    .mini-btn {
-      min-height: 40px;
-      font-size: 14px;
-      border-radius: 10px;
-      padding: 0 10px;
+    .reconnect {
+      display: block;
+      margin: 18px auto 0;
+      padding: 12px 18px;
+      font-size: 15px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
-
-    .log {
-      height: 220px;
-      overflow: auto;
-      background: #070203;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.35;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #f4dce1;
-    }
-
-    .log div {
-      padding: 1px 0;
-    }
-
-    .ok { color: var(--ok); }
-    .warn { color: var(--warn); }
-    .bad { color: var(--bad); }
 
     .hint {
+      margin-top: 16px;
+      text-align: center;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.35;
+      line-height: 1.45;
+      font-style: italic;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(0,0,0,.2);
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .crimson-line {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--line2), transparent);
-      margin: 2px 0;
+    .heart-divider {
+      text-align: center;
+      color: rgba(255, 179, 192, 0.45);
+      margin: 10px 0 2px;
+      letter-spacing: 8px;
     }
   </style>
 </head>
+
 <body>
-  <div class="app">
-    <div class="header">
-      <div>
-        <div class="title">CRIMSON ROBOT CONTROL</div>
-        <div class="subtitle">Алый/черный интерфейс • батарея max 3.8 В • быстрый отклик кнопок</div>
-      </div>
+  <div class="wrap">
+    <h1>Robot Eyes ❤</h1>
+    <div class="subtitle">маленький робот для наших моментов</div>
 
-      <div class="status">
-        <span id="statusDot" class="dot offline"></span>
-        <span id="statusText" class="status-text">Оффлайн</span>
+    <div class="card">
+      <div class="status" id="status">Подключение...</div>
+      <div class="substatus" id="substatus">Broker: EMQX</div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-top">
+            <div class="metric-title">Заряд</div>
+            <div class="metric-value" id="batteryValue">--%</div>
+          </div>
+          <div class="bar">
+            <div class="fill battery" id="batteryBar"></div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="metric-top">
+            <div class="metric-title">Взаимодействие</div>
+            <div class="metric-value" id="interactionValue">--</div>
+          </div>
+          <div class="bar">
+            <div class="fill interaction" id="interactionBar"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="battery-card">
-      <div class="battery-top">
-        <div>
-          <div class="battery-label">Батарея робота</div>
-          <div class="hint">Максимальное напряжение: <b id="battMax">3.80</b> В = 100%</div>
-        </div>
+    <div class="card days-card">
+      <div class="metric-title">Мы вместе</div>
+      <div class="days-number" id="daysValue">--</div>
+      <div class="days-label">дней с 28 марта 2026</div>
+    </div>
 
-        <div class="battery-values">
-          <div id="battVolt" class="battery-volt">-- В</div>
-          <div id="battPercent" class="battery-percent">-- %</div>
-        </div>
+    <div class="heart-divider">❤ ❤ ❤</div>
+
+    <div class="card">
+      <div class="section-title">Экран 128x64</div>
+
+      <div class="screen-wrap">
+        <canvas id="screen" width="128" height="64"></canvas>
       </div>
 
-      <div class="battery-bar">
-        <div id="battFill" class="battery-fill"></div>
+      <div class="row">
+        <button class="small clear" onclick="clearCanvas()">Очистить</button>
+        <button class="small send" onclick="sendDrawing()">Отправить рисунок</button>
       </div>
 
-      <div>
-        <label for="testVoltage">Тестовое напряжение батареи</label>
-        <input id="testVoltage" type="range" min="2.80" max="3.80" step="0.01" value="3.50" />
+      <div class="hint">
+        Перед показом рисунка робот на 2 секунды удивится,
+        затем будет показывать рисунок 60 секунд.
       </div>
     </div>
 
-    <div class="controls">
-      <div class="pad-wrap">
-        <div class="pad-title">Управление</div>
+    <div class="card">
+      <div class="section-title">Эмоции</div>
 
-        <div class="pad">
-          <button class="btn up" data-cmd="forward" data-type="move">▲</button>
-          <button class="btn left" data-cmd="left" data-type="move">◀</button>
-          <button class="btn center stop" data-cmd="stop" data-type="action">■</button>
-          <button class="btn right" data-cmd="right" data-type="move">▶</button>
-          <button class="btn down" data-cmd="backward" data-type="move">▼</button>
-        </div>
-
-        <div class="crimson-line"></div>
-
-        <div class="row-3">
-          <button class="btn action" data-cmd="start" data-type="action">START</button>
-          <button class="btn action" data-cmd="home" data-type="action">HOME</button>
-          <button class="btn action" data-cmd="light" data-type="action">LIGHT</button>
-        </div>
-
-        <button class="btn estop" data-cmd="estop" data-type="action">E-STOP</button>
-
-        <div class="hint">
-          Движение: удерживай кнопку. Сайт сразу отправляет команду, затем повторяет её, пока кнопка нажата.
-          При отпускании отправляется останов.
-        </div>
+      <div class="buttons">
+        <button class="emotion-btn" onclick="sendEmotion('hug')">Обнимашки</button>
+        <button class="emotion-btn" onclick="sendEmotion('tickle')">Щекотка</button>
       </div>
 
-      <div class="side">
-        <div class="panel">
-          <div class="panel-title">Подключение</div>
-
-          <div class="row">
-            <div>
-              <label for="transport">Транспорт</label>
-              <select id="transport">
-                <option value="auto">Auto (WS + HTTP)</option>
-                <option value="ws">WebSocket</option>
-                <option value="http">HTTP</option>
-              </select>
-            </div>
-
-            <div>
-              <label for="repeatMs">Повтор движения, мс</label>
-              <input id="repeatMs" type="number" min="30" step="10" value="80" />
-            </div>
-          </div>
-
-          <div>
-            <label for="wsUrl">WebSocket URL</label>
-            <input id="wsUrl" type="text" value="ws://192.168.4.1:81" />
-          </div>
-
-          <div>
-            <label for="httpUrl">HTTP URL робота</label>
-            <input id="httpUrl" type="text" value="http://192.168.4.1" />
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="ackTimeoutMs">ACK timeout, мс</label>
-              <input id="ackTimeoutMs" type="number" min="100" step="50" value="350" />
-            </div>
-
-            <div style="display:flex; align-items:end;">
-              <button id="connectBtn" class="btn mini-btn">Переподключить</button>
-            </div>
-          </div>
-
-          <div class="hint">
-            Для минимальной задержки лучше WebSocket. HTTP работает как запасной канал.
-            Если страница открывается по HTTPS, а робот по HTTP/WS без сертификата, браузер может блокировать подключение.
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-title">Лог</div>
-          <div id="log" class="log"></div>
-
-          <div class="row">
-            <button id="clearLogBtn" class="btn mini-btn">Очистить лог</button>
-            <button id="sendStopBtn" class="btn mini-btn">Отправить STOP</button>
-          </div>
-        </div>
+      <div class="hint">
+        Нажатие любой кнопки мгновенно отменяет показ рисунка.
       </div>
+    </div>
+
+    <button class="reconnect" onclick="manualReconnect()">Переподключить</button>
+
+    <div class="hint">
+      ESP32 и сайт должны использовать один и тот же MQTT-брокер и один SECRET.
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
+
   <script>
-    /*******************************************************
-     * ВАЖНО:
-     * 1) Поменяй IP робота в wsUrl и httpUrl.
-     * 2) Робот должен принимать JSON-команды.
-     * 3) Для быстрой реакции лучше реализовать WebSocket на роботе.
-     *******************************************************/
+    // ВАЖНО: SECRET должен совпадать с SECRET в main.py на ESP32.
+    const SECRET = "r3b0t-3y3s-7f2a91c4d8e6b0a35c7d9e1f2a4b6c8d";
 
-    const CONFIG = {
-      batteryMaxVoltage: 3.8,
-      transport: "auto",
-      wsUrl: "ws://192.168.4.1:81",
-      httpUrl: "http://192.168.4.1",
-      repeatMs: 80,
-      ackTimeoutMs: 350,
-      retries: 3
-    };
+    // Должно совпадать с ESP32.
+    // ESP32: broker.emqx.io:1883
+    // Сайт:  wss://broker.emqx.io:8084/mqtt
+    const BROKER_NAME = "EMQX";
+    const BROKER_URL = "wss://broker.emqx.io:8084/mqtt";
 
-    const state = {
-      ws: null,
-      wsOk: false,
-      httpOk: false,
-      cmdId: 0,
-      pending: new Map(),
-      activeDir: null,
-      repeatTimer: null,
-      reconnectTimer: null
-    };
+    const CMD_TOPIC = "robot-eyes/" + SECRET + "/cmd";
+    const IMAGE_TOPIC = "robot-eyes/" + SECRET + "/image";
+    const STATUS_TOPIC = "robot-eyes/" + SECRET + "/status";
 
-    const els = {
-      statusDot: document.getElementById("statusDot"),
-      statusText: document.getElementById("statusText"),
+    const RELATIONSHIP_START = new Date(2026, 2, 28, 0, 0, 0); // 28 марта 2026
+    const IDLE_THRESHOLD_SEC = 120;
 
-      battMax: document.getElementById("battMax"),
-      battVolt: document.getElementById("battVolt"),
-      battPercent: document.getElementById("battPercent"),
-      battFill: document.getElementById("battFill"),
-      testVoltage: document.getElementById("testVoltage"),
+    const statusEl = document.getElementById("status");
+    const substatusEl = document.getElementById("substatus");
 
-      transport: document.getElementById("transport"),
-      wsUrl: document.getElementById("wsUrl"),
-      httpUrl: document.getElementById("httpUrl"),
-      repeatMs: document.getElementById("repeatMs"),
-      ackTimeoutMs: document.getElementById("ackTimeoutMs"),
+    const batteryValueEl = document.getElementById("batteryValue");
+    const batteryBarEl = document.getElementById("batteryBar");
 
-      connectBtn: document.getElementById("connectBtn"),
-      clearLogBtn: document.getElementById("clearLogBtn"),
-      sendStopBtn: document.getElementById("sendStopBtn"),
-      log: document.getElementById("log")
-    };
+    const interactionValueEl = document.getElementById("interactionValue");
+    const interactionBarEl = document.getElementById("interactionBar");
 
-    function nowString() {
-      return new Date().toLocaleTimeString("ru-RU", { hour12: false });
+    const daysValueEl = document.getElementById("daysValue");
+
+    const canvas = document.getElementById("screen");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    let client = null;
+    let brokerConnected = false;
+
+    let lastEspSeen = 0;
+    let batteryPercent = -1;
+    let idleSeconds = 9999;
+
+    let drawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    function setStatus(text, color) {
+      statusEl.textContent = text;
+      statusEl.style.color = color;
     }
 
-    function log(message, kind = "") {
-      const line = document.createElement("div");
-      line.textContent = `[${nowString()}] ${message}`;
-      if (kind) line.className = kind;
-      els.log.appendChild(line);
-
-      while (els.log.children.length > 350) {
-        els.log.removeChild(els.log.firstChild);
-      }
-
-      els.log.scrollTop = els.log.scrollHeight;
+    function setSubstatus(text) {
+      substatusEl.textContent = text;
     }
 
-    function setStatus(mode, text) {
-      els.statusText.textContent = text;
-      els.statusDot.className = "dot " + mode;
+    function updateDays() {
+      const now = new Date();
+      const diff = now - RELATIONSHIP_START;
+      const days = Math.max(0, Math.floor(diff / 86400000));
+      daysValueEl.textContent = String(days);
     }
 
-    function clamp(v, min, max) {
-      return Math.max(min, Math.min(max, v));
+    function interactionText(sec) {
+      if (sec < 5) return "только что";
+      if (sec < 20) return "тепло";
+      if (sec < 45) return "нормально";
+      if (sec < 80) return "начинает скучать";
+      return "очень скучает";
     }
 
-    function setBattery(voltage, source = "") {
-      if (!Number.isFinite(voltage)) return;
-
-      const maxV = CONFIG.batteryMaxVoltage;
-      const percent = clamp((voltage / maxV) * 100, 0, 100);
-
-      els.battVolt.textContent = `${voltage.toFixed(2)} В`;
-      els.battPercent.textContent = `${percent.toFixed(0)} %`;
-      els.battFill.style.width = `${percent}%`;
-      els.battMax.textContent = maxV.toFixed(2);
-
-      if (source === "robot") {
-        // Чтобы не спамить лог, можно раскомментировать:
-        // log(`Батарея от робота: ${voltage.toFixed(2)} В`, "ok");
-      }
-    }
-
-    function loadConfig() {
-      try {
-        const saved = localStorage.getItem("crimson-robot-config");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          Object.assign(CONFIG, parsed);
-        }
-      } catch (e) {
-        console.warn("Config load failed", e);
-      }
-
-      els.transport.value = CONFIG.transport;
-      els.wsUrl.value = CONFIG.wsUrl;
-      els.httpUrl.value = CONFIG.httpUrl;
-      els.repeatMs.value = CONFIG.repeatMs;
-      els.ackTimeoutMs.value = CONFIG.ackTimeoutMs;
-    }
-
-    function saveConfig() {
-      try {
-        localStorage.setItem("crimson-robot-config", JSON.stringify(CONFIG));
-      } catch (e) {
-        console.warn("Config save failed", e);
-      }
-    }
-
-    function applyInputs() {
-      CONFIG.transport = els.transport.value;
-      CONFIG.wsUrl = els.wsUrl.value.trim();
-      CONFIG.httpUrl = els.httpUrl.value.trim().replace(/\/+$/, "");
-      CONFIG.repeatMs = clamp(parseInt(els.repeatMs.value, 10) || 80, 30, 1000);
-      CONFIG.ackTimeoutMs = clamp(parseInt(els.ackTimeoutMs.value, 10) || 350, 100, 5000);
-      saveConfig();
-    }
-
-    function urlJoin(base, path) {
-      if (!base) return "";
-      return `${base}${path.startsWith("/") ? path : "/" + path}`;
-    }
-
-    function makeAbortTimeout(ms) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), ms);
-      return {
-        signal: controller.signal,
-        done: () => clearTimeout(timer)
-      };
-    }
-
-    function sendWs(payload) {
-      if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return false;
-      try {
-        state.ws.send(JSON.stringify(payload));
-        return true;
-      } catch (e) {
-        log("WS send error: " + e.message, "bad");
-        return false;
-      }
-    }
-
-    function sendHttp(payload) {
-      if (!CONFIG.httpUrl) return false;
-
-      const timeoutMs = Math.max(700, CONFIG.ackTimeoutMs * 2);
-      const { signal, done } = makeAbortTimeout(timeoutMs);
-
-      fetch(urlJoin(CONFIG.httpUrl, "/command"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload),
-        cache: "no-store",
-        mode: "cors",
-        signal
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            throw new Error("HTTP " + res.status);
-          }
-
-          const text = await res.text();
-          if (!text) return null;
-
-          try {
-            return JSON.parse(text);
-          } catch {
-            return null;
-          }
-        })
-        .then((data) => {
-          if (data) handleMessageData(data);
-        })
-        .catch((err) => {
-          // Не засоряем лог при каждом update движения, только для важных команд
-          if (payload.action === "release" || payload.name === "estop" || payload.name === "stop" || payload.type === "button" && payload.action === "press" && payload.name !== "forward" && payload.name !== "backward" && payload.name !== "left" && payload.name !== "right") {
-            log(`HTTP send fail [${payload.name}/${payload.action}]: ${err.message}`, "bad");
-          }
-        })
-        .finally(done);
-
-      return true;
-    }
-
-    function send(payload) {
-      if (CONFIG.transport === "ws") {
-        return sendWs(payload);
-      }
-
-      if (CONFIG.transport === "http") {
-        return sendHttp(payload);
-      }
-
-      // auto
-      if (sendWs(payload)) return true;
-      return sendHttp(payload);
-    }
-
-    function trackAck(id, payload, retries = CONFIG.retries) {
-      const old = state.pending.get(id);
-      if (old && old.timer) clearTimeout(old.timer);
-
-      const timer = setTimeout(() => onAckTimeout(id), CONFIG.ackTimeoutMs);
-      state.pending.set(id, { payload, retries, timer });
-    }
-
-    function onAckTimeout(id) {
-      const item = state.pending.get(id);
-      if (!item) return;
-
-      if (item.retries > 0) {
-        item.retries--;
-        log(`Нет ACK для ${item.payload.name}/${item.payload.action}, повтор...`, "warn");
-        send(item.payload);
-        item.timer = setTimeout(() => onAckTimeout(id), CONFIG.ackTimeoutMs);
+    function updateBars() {
+      // Battery
+      if (batteryPercent < 0) {
+        batteryValueEl.textContent = "нет данных";
+        batteryBarEl.style.width = "0%";
       } else {
-        state.pending.delete(id);
-        log(`Команда ${item.payload.name}/${item.payload.action} не подтверждена роботом`, "bad");
+        batteryValueEl.textContent = batteryPercent + "%";
+        batteryBarEl.style.width = Math.max(0, Math.min(100, batteryPercent)) + "%";
+      }
+
+      // Interaction
+      const safeIdle = Number.isFinite(idleSeconds) ? Math.max(0, idleSeconds) : 9999;
+      const score = Math.max(0, Math.min(100, 100 - (safeIdle / IDLE_THRESHOLD_SEC) * 100));
+
+      interactionValueEl.textContent = interactionText(safeIdle);
+      interactionBarEl.style.width = score + "%";
+
+      if (score > 70) {
+        interactionBarEl.style.background = "linear-gradient(90deg, #7a0010, #dc1430, #ff7a8a)";
+      } else if (score > 35) {
+        interactionBarEl.style.background = "linear-gradient(90deg, #5a000b, #8b0000, #dc1430)";
+      } else {
+        interactionBarEl.style.background = "linear-gradient(90deg, #2a0005, #5a000b, #8b0000)";
       }
     }
 
-    function handleAck(id) {
-      const item = state.pending.get(id);
-      if (!item) return;
-      clearTimeout(item.timer);
-      state.pending.delete(id);
+    function updateStatus() {
+      if (!brokerConnected) {
+        setStatus("Подключение...", "#ffb35a");
+        setSubstatus("Broker: " + BROKER_NAME);
+        return;
+      }
+
+      const now = Date.now();
+      const espAge = now - lastEspSeen;
+
+      if (lastEspSeen === 0) {
+        setStatus("Брокер подключён, ждём робота...", "#ffb35a");
+        setSubstatus("ESP heartbeat not received yet");
+        return;
+      }
+
+      if (espAge > 20000) {
+        setStatus("Робот офлайн", "#ff5a5a");
+        setSubstatus("Last ESP heartbeat: " + Math.round(espAge / 1000) + " sec ago");
+      } else {
+        setStatus("Робот онлайн", "#ff8fa3");
+        setSubstatus("Last ESP heartbeat: " + Math.round(espAge / 1000) + " sec ago");
+      }
+
+      updateBars();
     }
 
-    function sendCommand(name, action, requireAck = false, retries = CONFIG.retries) {
-      const id = ++state.cmdId;
-      const payload = {
-        id,
-        type: "button",
-        name,
-        action,
-        ts: Date.now()
-      };
-
-      const sent = send(payload);
-
-      if (!sent) {
-        log(`Не отправлено: ${name}/${action} — нет соединения`, "bad");
-        return null;
-      }
-
-      if (requireAck) {
-        trackAck(id, payload, retries);
-      }
-
-      return id;
-    }
-
-    function handleMessageData(data) {
-      if (!data || typeof data !== "object") return;
-
-      if (data.type === "ack" && data.id != null) {
-        handleAck(Number(data.id));
-        return;
-      }
-
-      if (data.type === "battery" && data.voltage != null) {
-        setBattery(Number(data.voltage), "robot");
-        return;
-      }
-
-      if (data.type === "status") {
-        log("Robot status: " + JSON.stringify(data), "ok");
-        return;
-      }
-
-      if (data.type === "hello" || data.type === "pong") {
-        return;
-      }
-
-      log("<< " + JSON.stringify(data));
-    }
-
-    function connectWs() {
-      if (CONFIG.transport === "http") return;
-
-      if (state.ws) {
-        state.ws.onopen = null;
-        state.ws.onmessage = null;
-        state.ws.onerror = null;
-        state.ws.onclose = null;
-        try { state.ws.close(); } catch {}
-        state.ws = null;
-      }
-
-      if (!CONFIG.wsUrl) {
-        state.wsOk = false;
-        return;
-      }
-
-      setStatus("connecting", "Подключение WebSocket...");
-
+    function parseStatus(message) {
+      let text;
       try {
-        state.ws = new WebSocket(CONFIG.wsUrl);
+        text = new TextDecoder().decode(message);
       } catch (e) {
-        log("WebSocket URL ошибка: " + e.message, "bad");
-        state.wsOk = false;
-        scheduleReconnect();
-        return;
+        text = String(message);
       }
 
-      state.ws.onopen = () => {
-        state.wsOk = true;
-        setStatus("online", "WebSocket онлайн");
-        log("WebSocket подключен", "ok");
-        send({ type: "hello", ts: Date.now() });
-      };
-
-      state.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          handleMessageData(data);
-        } catch {
-          log("<< " + String(event.data));
+      const fields = {};
+      text.split(";").forEach(part => {
+        const kv = part.split("=");
+        if (kv.length === 2) {
+          fields[kv[0].trim()] = kv[1].trim();
         }
-      };
+      });
 
-      state.ws.onerror = () => {
-        log("WebSocket error", "bad");
-      };
+      if (fields.battery !== undefined) {
+        const b = parseInt(fields.battery, 10);
+        batteryPercent = Number.isFinite(b) ? b : -1;
+      }
 
-      state.ws.onclose = () => {
-        state.wsOk = false;
+      if (fields.idle !== undefined) {
+        const i = parseInt(fields.idle, 10);
+        idleSeconds = Number.isFinite(i) ? i : 9999;
+      }
 
-        if (state.httpOk) {
-          setStatus("online", "HTTP онлайн");
-        } else {
-          setStatus("offline", "Оффлайн");
-        }
-
-        scheduleReconnect();
-      };
+      lastEspSeen = Date.now();
+      updateStatus();
     }
 
-    async function checkHttp() {
-      if (CONFIG.transport === "ws" || !CONFIG.httpUrl) {
-        state.httpOk = false;
-        return;
+    function connectMQTT() {
+      if (client) {
+        try {
+          client.end(true);
+        } catch (e) {
+          console.warn("client.end error", e);
+        }
       }
 
-      const { signal, done } = makeAbortTimeout(800);
+      brokerConnected = false;
+      updateStatus();
 
-      try {
-        const res = await fetch(urlJoin(CONFIG.httpUrl, "/health"), {
-          method: "GET",
-          cache: "no-store",
-          mode: "cors",
-          signal
+      client = mqtt.connect(BROKER_URL, {
+        clientId: "web-robot-eyes-" + Math.random().toString(16).slice(2),
+        clean: true,
+        keepalive: 20,
+        reconnectPeriod: 1000,
+        connectTimeout: 4000,
+        protocolVersion: 4
+      });
+
+      client.on("connect", () => {
+        console.log("MQTT connected to " + BROKER_NAME);
+        brokerConnected = true;
+
+        client.subscribe(STATUS_TOPIC, { qos: 0 }, (err) => {
+          if (err) {
+            console.error("Subscribe status error:", err);
+          }
         });
 
-        state.httpOk = res.ok;
+        updateStatus();
+      });
 
-        if (state.httpOk && !state.wsOk) {
-          setStatus("online", "HTTP онлайн");
+      client.on("reconnect", () => {
+        console.log("MQTT reconnecting...");
+        brokerConnected = false;
+        setStatus("Переподключение...", "#ffb35a");
+        updateStatus();
+      });
+
+      client.on("close", () => {
+        console.log("MQTT closed");
+        brokerConnected = false;
+        updateStatus();
+      });
+
+      client.on("offline", () => {
+        console.log("MQTT offline");
+        brokerConnected = false;
+        updateStatus();
+      });
+
+      client.on("error", (err) => {
+        console.error("MQTT error:", err);
+        setStatus("Ошибка брокера", "#ff5a5a");
+        setSubstatus(String(err.message || err));
+      });
+
+      client.on("message", (topic, message) => {
+        if (topic === STATUS_TOPIC) {
+          parseStatus(message);
         }
-      } catch {
-        state.httpOk = false;
-      } finally {
-        done();
-      }
+      });
     }
 
-    function scheduleReconnect() {
-      if (CONFIG.transport === "http") return;
-
-      clearTimeout(state.reconnectTimer);
-      state.reconnectTimer = setTimeout(() => {
-        connectWs();
-        checkHttp();
-      }, 1200);
+    function manualReconnect() {
+      lastEspSeen = 0;
+      batteryPercent = -1;
+      idleSeconds = 9999;
+      setStatus("Ручное переподключение...", "#ffb35a");
+      connectMQTT();
     }
 
-    function connectNow() {
-      applyInputs();
+    function clearCanvas() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      clearTimeout(state.reconnectTimer);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.imageSmoothingEnabled = false;
 
-      if (state.ws) {
-        state.ws.onopen = null;
-        state.ws.onmessage = null;
-        state.ws.onerror = null;
-        state.ws.onclose = null;
-        try { state.ws.close(); } catch {}
-        state.ws = null;
-      }
-
-      state.wsOk = false;
-      state.httpOk = false;
-      setStatus("connecting", "Подключение...");
-
-      connectWs();
-      checkHttp();
+      setSubstatus("Холст очищен");
     }
 
-    function clearMoveState() {
-      clearInterval(state.repeatTimer);
-      state.repeatTimer = null;
-      state.activeDir = null;
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
     }
 
-    function startMove(dir) {
-      if (state.activeDir === dir) return;
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      drawing = true;
 
-      if (state.activeDir) {
-        sendCommand(state.activeDir, "release", true, 5);
-      }
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
 
-      state.activeDir = dir;
+      const p = getCanvasPos(e);
+      lastX = p.x;
+      lastY = p.y;
 
-      // Первая команда немедленно, без задержки
-      sendCommand(dir, "press", false);
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }, { passive: false });
 
-      clearInterval(state.repeatTimer);
-      state.repeatTimer = setInterval(() => {
-        sendCommand(dir, "update", false);
-      }, CONFIG.repeatMs);
-    }
+    canvas.addEventListener("pointermove", (e) => {
+      if (!drawing) return;
+      e.preventDefault();
 
-    function stopMove(dir) {
-      if (state.activeDir === dir) {
-        clearMoveState();
-      }
+      const p = getCanvasPos(e);
 
-      // Release критичен: повторяем, если робот не ответил
-      sendCommand(dir, "release", true, 8);
-    }
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
 
-    function forceStop(sendCmd = true) {
-      clearMoveState();
-      if (sendCmd) {
-        sendCommand("stop", "press", true, 8);
-      }
-    }
+      lastX = p.x;
+      lastY = p.y;
+    }, { passive: false });
 
-    function emergencyStop() {
-      clearMoveState();
-      sendCommand("estop", "press", true, 12);
-      log("E-STOP отправлен", "warn");
-    }
+    canvas.addEventListener("pointerup", () => {
+      drawing = false;
+    });
 
-    function bindButtons() {
-      const buttons = document.querySelectorAll("[data-cmd]");
+    canvas.addEventListener("pointercancel", () => {
+      drawing = false;
+    });
 
-      buttons.forEach((btn) => {
-        const cmd = btn.dataset.cmd;
-        const type = btn.dataset.type || "action";
+    canvas.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+    });
 
-        const onPress = (e) => {
-          e.preventDefault();
-          btn.classList.add("pressed");
+    function canvasToBase64() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
 
-          if (type === "move") {
-            startMove(cmd);
-          } else if (cmd === "stop") {
-            forceStop(true);
-          } else if (cmd === "estop") {
-            emergencyStop();
-          } else {
-            sendCommand(cmd, "press", true, CONFIG.retries);
+      // 128x64 монохромно = 1024 байта
+      const bytes = new Uint8Array(1024);
+
+      for (let y = 0; y < 64; y++) {
+        const page = y >> 3;
+        const bit = 1 << (y & 7);
+        const rowOffset = y * 128;
+        const bufferOffset = page * 128;
+
+        for (let x = 0; x < 128; x++) {
+          const idx = (rowOffset + x) * 4;
+
+          // Белый пиксель => 1 на OLED
+          if (d[idx] > 127 || d[idx + 1] > 127 || d[idx + 2] > 127) {
+            bytes[bufferOffset + x] |= bit;
           }
-        };
+        }
+      }
 
-        const onRelease = (e) => {
-          if (e) e.preventDefault();
-          btn.classList.remove("pressed");
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
 
-          if (type === "move") {
-            stopMove(cmd);
+      return btoa(binary);
+    }
+
+    function markLocalInteraction() {
+      idleSeconds = 0;
+      lastEspSeen = Date.now();
+      updateBars();
+    }
+
+    function publishWithRetry(topic, payload, qos, onSuccess, onError) {
+      if (!client || !client.connected) {
+        onError(new Error("not connected"));
+        return;
+      }
+
+      client.publish(topic, payload, { qos: qos }, (err) => {
+        if (err) {
+          console.warn("Publish error, retrying once:", err);
+          setTimeout(() => {
+            if (client && client.connected) {
+              client.publish(topic, payload, { qos: qos }, (err2) => {
+                if (err2) {
+                  onError(err2);
+                } else {
+                  onSuccess();
+                }
+              });
+            } else {
+              onError(err);
+            }
+          }, 500);
+        } else {
+          onSuccess();
+        }
+      });
+    }
+
+    function sendDrawing() {
+      if (!client || !client.connected) {
+        setStatus("Нет подключения", "#ff5a5a");
+        connectMQTT();
+        return;
+      }
+
+      try {
+        const payload = canvasToBase64();
+
+        publishWithRetry(
+          IMAGE_TOPIC,
+          payload,
+          1,
+          () => {
+            markLocalInteraction();
+            setStatus("Рисунок отправлен", "#ff8fa3");
+            setSubstatus("Робот удивится 2 сек, затем покажет рисунок 60 сек");
+          },
+          (err) => {
+            console.error("Publish image error:", err);
+            setStatus("Ошибка отправки рисунка", "#ff5a5a");
+            setSubstatus(String(err.message || err));
           }
-        };
-
-        btn.addEventListener("pointerdown", onPress);
-        btn.addEventListener("pointerup", onRelease);
-        btn.addEventListener("pointercancel", onRelease);
-        btn.addEventListener("pointerleave", onRelease);
-        btn.addEventListener("contextmenu", (e) => e.preventDefault());
-      });
+        );
+      } catch (e) {
+        console.error(e);
+        setStatus("Ошибка холста", "#ff5a5a");
+        setSubstatus(String(e.message || e));
+      }
     }
 
-    function bindUi() {
-      els.connectBtn.addEventListener("click", connectNow);
+    function sendEmotion(emotion) {
+      if (!client || !client.connected) {
+        setStatus("Нет подключения", "#ff5a5a");
+        connectMQTT();
+        return;
+      }
 
-      els.clearLogBtn.addEventListener("click", () => {
-        els.log.innerHTML = "";
-      });
+      const names = {
+        hug: "Обнимашки",
+        tickle: "Щекотка"
+      };
 
-      els.sendStopBtn.addEventListener("click", () => {
-        forceStop(true);
-      });
-
-      els.testVoltage.addEventListener("input", (e) => {
-        setBattery(parseFloat(e.target.value), "test");
-      });
-
-      ["transport", "wsUrl", "httpUrl", "repeatMs", "ackTimeoutMs"].forEach((key) => {
-        els[key].addEventListener("change", applyInputs);
-        els[key].addEventListener("input", applyInputs);
-      });
-
-      window.addEventListener("blur", () => {
-        forceStop(true);
-      });
-
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-          forceStop(true);
+      publishWithRetry(
+        CMD_TOPIC,
+        emotion,
+        1,
+        () => {
+          markLocalInteraction();
+          setStatus("Отправлено: " + (names[emotion] || emotion), "#ff8fa3");
+          setSubstatus("Показ рисунка отменён, если он был активен");
+        },
+        (err) => {
+          console.error("Publish error:", err);
+          setStatus("Ошибка отправки", "#ff5a5a");
+          setSubstatus(String(err.message || err));
         }
-      });
-
-      window.addEventListener("pagehide", () => {
-        // Попытке отправить останов даже при закрытии вкладки
-        const payload = {
-          id: ++state.cmdId,
-          type: "button",
-          name: "estop",
-          action: "press",
-          ts: Date.now()
-        };
-
-        sendWs(payload);
-
-        if (CONFIG.httpUrl) {
-          try {
-            fetch(urlJoin(CONFIG.httpUrl, "/command"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-              keepalive: true,
-              cache: "no-store",
-              mode: "cors"
-            }).catch(() => {});
-          } catch {}
-        }
-      });
+      );
     }
 
-    function startHeartbeats() {
-      setInterval(() => {
-        if (state.wsOk) {
-          send({ type: "heartbeat", ts: Date.now() });
-        }
-      }, 1000);
+    window.sendEmotion = sendEmotion;
+    window.sendDrawing = sendDrawing;
+    window.clearCanvas = clearCanvas;
+    window.manualReconnect = manualReconnect;
 
-      setInterval(() => {
-        if (CONFIG.transport !== "ws") {
-          checkHttp();
-        }
-      }, 3000);
-    }
+    setInterval(updateStatus, 1000);
+    setInterval(updateDays, 60000);
 
-    function init() {
-      loadConfig();
-      bindUi();
-      bindButtons();
-      setBattery(parseFloat(els.testVoltage.value), "test");
-      log("Интерфейс загружен. Настрой IP робота и нажми Переподключить.", "ok");
-      connectNow();
-      startHeartbeats();
-    }
-
-    init();
+    updateDays();
+    clearCanvas();
+    connectMQTT();
   </script>
 </body>
 </html>
